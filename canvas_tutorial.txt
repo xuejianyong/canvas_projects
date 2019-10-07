@@ -1,0 +1,1221 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<link rel="icon" type="image/x-icon" href="./images/logo.png" />
+<script src="myScript.js"></script>
+<script src="./js/jquery-3.3.1.js"></script>
+<script src="./js/highcharts.js"></script>
+
+<script>
+var width = 500;
+var height = 500;
+var interval = width/10;
+var innerDist = interval/2;
+
+var xcenter = 0;
+var ycenter = 0;
+var direction = "";
+var isInitialState = "";
+var resultString = "";
+var startState = false;
+
+function drawEnvironment(){
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	ctx.fillStyle = "#0F9";
+	ctx.fillRect(0,0,interval,height);//left |
+	ctx.fillRect(0,0,width,interval);// up -
+	ctx.fillRect(width-interval,0,width,height);//right |
+	ctx.fillRect(0,height-interval,width,height);//down -
+	ctx.fillRect(interval*2,interval*2,interval*5,interval*1);
+	ctx.fillRect(interval*2,interval*3,interval*6,interval*4);
+	ctx.fillRect(interval*3,interval*7,interval*5,interval*1);
+	ctx.fillRect(interval*8,interval*1,interval*1,interval*1);
+	ctx.fillRect(interval*1,interval*8,interval*1,interval*1);
+}
+
+function arrowDraw(xcenter,ycenter,innerDist,direction){
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	ctx.fillStyle = "#30F";
+	ctx.beginPath();
+	switch(direction){
+	case "up":
+		ctx.moveTo(xcenter,ycenter-innerDist);
+		ctx.lineTo(xcenter-innerDist,ycenter+innerDist);
+		ctx.lineTo(xcenter, ycenter+innerDist/2);
+		ctx.lineTo(xcenter+innerDist, ycenter+innerDist);
+		break;
+	case "down":
+		ctx.moveTo(xcenter,ycenter+innerDist);
+		ctx.lineTo(xcenter-innerDist,ycenter-innerDist);
+		ctx.lineTo(xcenter,ycenter-innerDist/2);
+		ctx.lineTo(xcenter+innerDist,ycenter-innerDist);
+		break;
+	case "left":
+		ctx.moveTo(xcenter-innerDist,ycenter);
+		ctx.lineTo(xcenter+innerDist,ycenter-innerDist);
+		ctx.lineTo(xcenter+innerDist/2,ycenter);
+		ctx.lineTo(xcenter+innerDist,ycenter+innerDist);
+		break;
+	case "right":
+		ctx.moveTo(xcenter+innerDist,ycenter);
+		ctx.lineTo(xcenter-innerDist,ycenter-innerDist);
+		ctx.lineTo(xcenter-innerDist/2,ycenter);
+		ctx.lineTo(xcenter-innerDist,ycenter+innerDist);
+		break;
+	}
+	ctx.closePath();
+	ctx.fill();
+}
+
+function enactAction(actionType){
+	var isBump = false;
+	var nextPosX = 0;
+	var nextPosY = 0;
+
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	
+	clearCurrent(xcenter,ycenter);
+	var interactionString = "";
+	
+	switch(actionType){
+	case 0://move forward
+		switch(direction){
+		case "up":
+			nextPosX = xcenter;
+			nextPosY = ycenter - interval;break;
+		case "right":
+			nextPosX = xcenter + interval;
+			nextPosY = ycenter;break;
+		case "down":
+			nextPosX = xcenter;
+			nextPosY = ycenter + interval;break;
+		case "left":
+			nextPosX = xcenter - interval;
+			nextPosY = ycenter;break;
+		}
+		isBump = isBoundary(nextPosX,nextPosY);//false：表示没有撞墙  true：表示撞墙了
+		if(!isBump){//no bump with the wall 没有撞墙
+			xcenter = nextPosX;
+			ycenter = nextPosY;
+			arrowDraw(xcenter,ycenter,innerDist,direction);
+			//drawForward(xcenter,ycenter,isBump,actionType);
+		}else{//撞墙了，原地不变
+			arrowDraw(xcenter,ycenter,innerDist,direction);
+			//drawForward(xcenter,ycenter,isBump,actionType);
+		}
+		interactionString = "ee"+actionType;
+		break;
+	case 1://turn left
+		switch(direction){
+		case "up":
+			direction = "left";
+			break;
+		case "right":
+			direction = "up";
+			break;
+		case "down":
+			direction = "right";
+			break;
+		case "left":
+			direction = "down";
+			break;
+		}
+		arrowDraw(xcenter,ycenter,innerDist,direction);
+		interactionString = "e"+actionType;
+		break;
+	case 2://turn right
+		switch(direction){
+		case "up":
+			direction = "right";
+			break;
+		case "right":
+			direction = "down";
+			break;
+		case "down":
+			direction = "left";
+			break;
+		case "left":
+			direction = "up";
+			break;
+		}
+		arrowDraw(xcenter,ycenter,innerDist,direction);
+		interactionString = "e"+actionType;
+		break;//turn right
+	case 3://feel front
+		switch(direction){
+		case "up":
+			nextPosX = xcenter;
+			nextPosY = ycenter - interval;break;
+		case "right":
+			nextPosX = xcenter + interval;
+			nextPosY = ycenter;break;
+		case "down":
+			nextPosX = xcenter;
+			nextPosY = ycenter + interval;break;
+		case "left":
+			nextPosX = xcenter - interval;
+			nextPosY = ycenter;break;
+		}
+		isBump = isBoundary(nextPosX,nextPosY);
+		arrowDraw(xcenter,ycenter,innerDist,direction);
+		//drawForward(xcenter,ycenter,isBump,actionType);
+		interactionString = "e"+actionType;
+		break;
+	case 4://feel left
+		switch(direction){
+		case "up":
+			nextPosX = xcenter-interval;
+			nextPosY = ycenter;break;
+		case "right":
+			nextPosX = xcenter;
+			nextPosY = ycenter-interval;break;
+		case "down":
+			nextPosX = xcenter+interval;
+			nextPosY = ycenter;break;
+		case "left":
+			nextPosX = xcenter;
+			nextPosY = ycenter+interval;break;
+		}
+		isBump = isBoundary(nextPosX,nextPosY);
+		arrowDraw(xcenter,ycenter,innerDist,direction);
+		interactionString = "e"+actionType;
+		//drawFeelLeft(xcenter,ycenter,isBump);
+		break;
+	case 5://feel right
+		switch(direction){
+		case "up":
+			nextPosX = xcenter+interval;
+			nextPosY = ycenter;break;
+		case "right":
+			nextPosX = xcenter;
+			nextPosY = ycenter+interval;break;
+		case "down":
+			nextPosX = xcenter-interval;
+			nextPosY = ycenter;break;
+		case "left":
+			nextPosX = xcenter;
+			nextPosY = ycenter-interval;break;
+		}
+		isBump = isBoundary(nextPosX,nextPosY);
+		arrowDraw(xcenter,ycenter,innerDist,direction);
+		interactionString = "e"+actionType;
+		//drawFeelRight(xcenter,ycenter,isBump);
+		break;
+	}
+
+	//在交互中的agent中 画出小的enacted interaction
+	var interactionEnactResultString = "";
+	if(isBump)interactionEnactResultString = "0";//表示撞墙了 enacted  interaction result
+	else interactionEnactResultString = "1";//表示没有撞墙     enacted  interaction result
+	interactionString = interactionString + interactionEnactResultString;
+	var imageSmall = document.getElementById(interactionImages[interactionString]);
+	
+	//agent 当中的小图标重新定义绘画原点和相应的旋转角度
+	ctx.save();
+	ctx.translate(xcenter,ycenter);
+	switch(direction){
+		case "up":
+			break;
+		case "right":
+			ctx.rotate(90*Math.PI/180);
+			break;
+		case "down":
+			ctx.rotate(180*Math.PI/180);
+			break;
+		case "left":
+			ctx.rotate(270*Math.PI/180);
+			break;
+		}
+	ctx.drawImage(imageSmall,-10,-10,20,20);
+	ctx.restore();
+	return isBump;//返回这个结果给enactive function
+}
+
+function clearCurrent(xcenter,ycenter){
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+ 	ctx.clearRect(xcenter-innerDist,ycenter-innerDist,interval,interval);
+}
+
+function drawForward(xcenter,ycenter,isBump,actionType){
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	if(!isBump){
+		ctx.fillStyle = "#3F0";
+	}else{//there is a wall in the front
+		if(actionType != 0){
+			ctx.fillStyle = "#F0C";
+		}else{
+			ctx.fillStyle = "#F00";
+		}
+	}
+	switch(direction){
+	case "left":
+		ctx.fillRect(xcenter-innerDist,ycenter-innerDist/2,innerDist/2,innerDist);break;
+	case "up":
+		ctx.fillRect(xcenter-innerDist/2,ycenter-innerDist,innerDist,innerDist/2);break;
+	case "right":
+		ctx.fillRect(xcenter+innerDist/2,ycenter-innerDist/2,innerDist/2,innerDist);break;
+	case "down":
+		ctx.fillRect(xcenter-innerDist/2,ycenter+innerDist/2,innerDist,innerDist/2);break;
+	}
+}
+
+function drawFeelLeft(xcenter,ycenter,isBump){
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	if(!isBump){
+		ctx.fillStyle = "#3F0";
+	}else{//there is a wall in the front
+		ctx.fillStyle = "#F0C";
+	}
+	switch(direction){
+	case "left":
+		ctx.fillRect(xcenter-innerDist/2,ycenter+innerDist/4,innerDist,innerDist/2);break;
+	case "up":
+		ctx.fillRect(xcenter-innerDist/4*3,ycenter-innerDist/2,innerDist/2,innerDist);break;
+	case "right":
+		ctx.fillRect(xcenter-innerDist/2,ycenter-innerDist/4*3,innerDist,innerDist/2);break;
+	case "down":
+		ctx.fillRect(xcenter+innerDist/4,ycenter-innerDist/2,innerDist/2,innerDist);break;
+	}
+}
+
+function drawFeelRight(xcenter,ycenter,isBump){
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	if(!isBump){
+		ctx.fillStyle = "#3F0";
+	}else{//there is a wall in the front
+		ctx.fillStyle = "#F0C";
+	}
+	switch(direction){
+	case "left":
+		ctx.fillRect(xcenter-innerDist/2,ycenter-innerDist/4*3,innerDist,innerDist/2);break;
+	case "up":
+		ctx.fillRect(xcenter+innerDist/4,ycenter-innerDist/2,innerDist/2,innerDist);break;
+	case "right":
+		ctx.fillRect(xcenter-innerDist/2,ycenter+innerDist/4,innerDist,innerDist/2);break;
+	case "down":
+		ctx.fillRect(xcenter-innerDist/4*3,ycenter-innerDist/2,innerDist/2,innerDist);break;
+	}
+}
+
+function isBoundary(nextPosX,nextPosY){
+	var isBoundary = false;
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+	var colors = ctx.getImageData(nextPosX, nextPosY, 1, 1).data;
+	var red=colors[0];
+	var green=colors[1];
+	var blue=colors[2];
+	if(red==0 && green==255 && blue==153){
+		isBoundary = true;
+	}
+	return isBoundary;
+}
+
+function getActionString(actionType){
+	var actionS = "";
+	switch(actionType){
+	case 0:actionS="move forward";break;
+	case 1:actionS="turn left";break;
+	case 2:actionS="turn right";break;
+	case 3:actionS="feel front";break;
+	case 4:actionS="feel left";break;
+	case 5:actionS="feel right";break;
+	}
+	return actionS;
+}
+
+
+var isclickEnv = 1;//按下的是哪个键
+var xindexEnv = 0;
+var yindexEnv = 0;
+function mouseClick(canvas, event){
+	var context = canvas.getContext("2d");	
+    var rect = canvas.getBoundingClientRect();
+    var x = event.clientX - rect.left * (canvas.width / rect.width);
+    var y = event.clientY - rect.top * (canvas.height / rect.height);
+    var clickNum = event.button;
+    if(x>50 && x<450 && y>50 && y<450 && x%50>0 && y%50>0){//只能在最大外边框的范围内修改环境，
+    	var xnumt = parseInt(x/50);
+    	xindexEnv = xnumt;
+		var xnum = xnumt*50;
+		
+		var ynumt = parseInt(y/50);
+		yindexEnv = ynumt;
+		var ynum = ynumt*50;
+		
+		switch(clickNum){
+		case 0:
+			context.fillStyle = "#0F9";
+			context.fillRect(xnum,ynum,50,50);
+			isclickEnv = 0;
+			break;
+		case 2:
+			document.oncontextmenu=new Function("return false");
+			context.clearRect(xnum,ynum,50,50);
+			isclickEnv = 2;
+			break;
+		}
+    }
+}
+
+function showInteractions(canvas, event){
+	var context = canvas.getContext("2d");	
+    var rect = canvas.getBoundingClientRect();
+    var x = event.clientX - rect.left * (canvas.width / rect.width);
+    var y = event.clientY - rect.top * (canvas.height / rect.height);
+    var clickNum = event.button;
+	alert(x+" "+y);	
+}
+
+function initialMaze(){
+	var canvas = document.getElementById("myCanvas");
+	var context = canvas.getContext("2d");
+	canvas.addEventListener("mousedown", function(event) {mouseClick(canvas, event);});//点击改变环境
+	
+	var canvas1 = document.getElementById("canvas1");//用来展示交互过程
+	var ctx1 = canvas1.getContext("2d");
+	canvas1.addEventListener("mousedown", function(event) {showInteractions(canvas1, event);});//这块需要思考一下，testici
+	
+	ctx1.strokeText("Valence", interval/2, ydraw-interval);
+	ctx1.strokeText("Interaction Step Number", interval/2, ydraw-3*interval/2);
+	ctx1.strokeText("Enacted Interaction", interval/2, ydraw-4*interval/2);
+	ctx1.strokeText("Intended Interaction", interval/2, ydraw-5*interval/2);
+	
+	/*ctx1.beginPath();   
+	ctx1.moveTo(3*interval,ydraw-7*interval/2);   
+	ctx1.lineTo(1260,ydraw-7*interval/2);
+	ctx1.stroke();
+	ctx1.strokeText("Level: 1", interval/2, ydraw-6*interval);
+	for(var l=1;l<3;l++){
+		ctx1.beginPath();   
+		ctx1.moveTo(3*interval,ydraw-7*interval/2-l*3*(interval+innerDist));   
+		ctx1.lineTo(1260,ydraw-7*interval/2-l*3*(interval+innerDist));  
+		ctx1.stroke();
+		ctx1.strokeText("Level: "+(l+1), interval/2, ydraw-6*interval-l*3*(interval+innerDist));
+	}*/
+
+	ctx1.strokeText("Composite Interaction", interval/2, ydraw-4*interval);
+	drawEnvironment();
+	isInitialState = "yes";//初始化状态，由于后台的java代码与交互代码公用一个函数，所以需要一个状态来区别一下。
+	var datas ={
+			"isInitialState":isInitialState
+			};
+	$.ajax({
+		url:'/maze/DlServlet',
+	    type:'GET',
+	    async : true,
+	    data:datas,
+	    dataType:'json',
+	    success:function(data,status){
+			//获得初始点的坐标和方向
+	    	xcenter = innerDist + data.coordiY*interval;
+	    	ycenter = innerDist + data.coordiX*interval;
+	    	direction = data.direction;
+	    	isInitialState = data.isInitialState;
+	    	arrowDraw(xcenter,ycenter,innerDist,direction);
+	    	var totalValence = data.totalValence;
+	    	$("#totalValence").val(totalValence);
+	        },
+	    error:function(){
+	    	alert('isInitial error');
+	    	}
+	});
+}
+
+var widthnum = width/50;
+var heightnum = height/50;
+function scanEnv(){
+	var env = "";
+	var c=document.getElementById("myCanvas");
+	var ctx=c.getContext("2d");
+    for(var i=0;i<widthnum;i++){
+        var row = [];
+        for(var j=0;j<heightnum;j++){
+            var pointX = j*interval+innerDist;
+            var pointY = i*interval+innerDist;
+            var colors = ctx.getImageData(pointX, pointY, 1, 1).data;
+            var red=colors[0];
+            var green=colors[1];
+            var blue=colors[2];
+            if(red==0 && green==255 && blue==153){//绿色区域
+            	env = env+"1,";
+            }else{
+            	env = env+"0,";
+            }
+        }
+    }
+    return env;
+}
+
+var b=[];
+function interaction(){
+	if(startState){
+		var datas ={
+			"isInitialState":isInitialState,
+			"env":scanEnv(),//扫描环境，但也不是每次都去扫描环境，只有在触发了环境之后再进行扫描，前台与后台交互的数据量很大的情况下，这样会更加简洁一些。
+			//"isclickEnv":isclickEnv,
+			//"xindexEnv":xindexEnv,
+			//"yindexEnv":yindexEnv,
+			
+			
+			"v_move_forward":$("#v_move_forward").val(),
+			"v_bump":$("#v_bump").val(),
+			"v_turn":$("#v_turn").val(),
+			"v_feel_empty":$("#v_feel_empty").val(),
+			"v_feel_wall":$("#v_feel_wall").val()
+			
+		};
+		//关于点击环境的内容一次只能传进去一次，如果环境发生了多处的变化，需要将整个环境进行一次扫描，同时还需要根据两边处理的结果进程给出完成的标志。
+		$.ajax({
+			url:'/maze/DlServlet',
+			type:'GET',
+			async : true,
+			data:datas,
+			dataType:'json',
+			success:function(data,status){
+				var actionType = data.actionType;
+				var drawResult = data.drawResult;//intended  interaction result
+				//isclickEnv = data.isclickEnv;
+				var enactedValence = data.enactedValence;
+				
+				var bumpTimes = data.bumpTimes;
+				var drawInteractionString = data.drawInteractionString;//取得composite interaction string from java
+				//var compositeString = data.compositeString;
+				
+				var totalValence = data.totalValence;
+				var loopNum = data.loopNum;
+				var isReady = data.isReady;
+				
+				
+				//highcharts codes
+				var series = chart.series[0],shift = series.data.length > 30; // 当数据点数量超过 20 个，则指定删除第一个点
+				chart.series[0].addPoint([loopNum,totalValence], true, false);
+				var seriesBump = chart.series[0],shift = seriesBump.data.length > 30; // 当数据点数量超过 20 个，则指定删除第一个点
+				chartBump.series[0].addPoint([loopNum,bumpTimes], true, false);
+				
+				var isBump = enactAction(actionType);
+				if(isBump)resultString = "0";//表示撞墙了 enacted  interaction result
+				else resultString = "1";//表示没有撞墙     enacted  interaction result
+				
+				
+				
+				var actionString = getActionString(actionType)//用来显示action 数字所表示的含义，数字对应不同的文字说明
+				$("#actionType").val(actionString);
+				$("#totalValence").val(totalValence);
+				$("#loopNum").val(loopNum);
+				
+				//组建将要在页面上显示的内容
+				var a = [];
+				a[a.length] = actionType;
+				a[a.length] = drawResult;
+				a[a.length] = resultString;//for enacted interaction
+				a[a.length] = loopNum;
+				a[a.length] = drawInteractionString;
+				a[a.length] = enactedValence;
+				a[a.length] = true;
+				
+				if(b.length<maxShowNum){
+					b[b.length] = a;
+				}else{
+					b[b.length] = a;
+					for (i = 1; i < b.length; i++) {
+						var te = b[i];
+						b[i-1] = te;
+					}
+					b.pop();
+				}
+				drawInteractionsNew(b);
+				if(isReady == "ok"){
+					setTimeout('interaction()',$("#time_interval").val());
+					isReady = "";
+				}
+
+				
+
+			},
+			error:function(){
+				alert('start error');
+				}
+		});
+	}
+}
+
+function start(){
+	if(!startState){
+		startState = true;
+		interaction();
+	}
+}
+
+function stop(){
+	startState = false;
+	interaction();
+}
+
+var xdraw = 1260;
+var ydraw = 1000;
+var yPrimitive = ydraw-3*interval;//primitive interaction的y轴坐标
+var limitFront = 25;
+var defaultStartPixel = 1215;
+var maxShowNum = 15;
+
+var marginpadding = 4;
+var imageBetweenMargin = 2;//在两个图片之间间距部分
+var defaultmetre = 50; //图片默认的尺寸
+var interactionImages = {
+		"e01":"move_forward",
+		"e00":"bump",
+		"ee01":"move_forward_up",
+		"ee00":"bump_up",
+		"e11":"turn_left",
+		"e21":"turn_right",
+		"e31":"feel_front_empty",
+		"e30":"feel_front_wall",
+		"e41":"feel_left_empty",
+		"e40":"feel_left_wall",
+		"e51":"feel_right_empty",
+		"e50":"feel_right_wall"
+
+}
+
+function drawInteractionsNew(b){
+	//alert("b length is:"+b.length);
+	var canvas=document.getElementById("canvas1");
+	var ctx=canvas.getContext("2d");
+
+	//显示文字说明信息
+	ctx.clearRect(0,0,canvas.width,canvas.height);
+	ctx.strokeText("Valence", interval/2, ydraw-interval);
+	ctx.strokeText("Interaction Step Number", interval/2, ydraw-3*interval/2);
+	ctx.strokeText("Enacted Interaction", interval/2, ydraw-4*interval/2);
+	ctx.strokeText("Intended Interaction", interval/2, ydraw-5*interval/2);
+
+	//
+	/*ctx.beginPath();   
+	ctx.moveTo(3*interval,ydraw-7*interval/2);   
+	ctx.lineTo(1260,ydraw-7*interval/2);   
+	ctx.stroke();
+	ctx.strokeText("Level: 1", interval/2, ydraw-6*interval);
+	for(var l=1;l<3;l++){
+		ctx.beginPath();   
+		ctx.moveTo(3*interval,ydraw-7*interval/2-l*3*(interval+innerDist));   
+		ctx.lineTo(1260,ydraw-7*interval/2-l*3*(interval+innerDist));  
+		ctx.stroke();
+		ctx.strokeText("Level: "+(l+1), interval/2, ydraw-6*interval-l*3*(interval+innerDist));
+	}*/
+	ctx.strokeText("Composite Interaction", interval/2, ydraw-4*interval);
+	
+	if(xdraw>limitFront){
+		xdraw = canvas.width-(b.length)*(interval+innerDist);
+		for(var i in b){
+			drawInteractions(ctx,b[i][0],b[i][1],b[i][2],b[i][3],b[i][4],b[i][5],b[i][6]);
+		}
+		xdraw = defaultStartPixel;
+	}
+}
+
+var nodes = [];
+function Node(inforstring){
+	this.infoString = inforstring;
+	this.upperNode = null;
+	this.upperNodeDirection = "top";
+	this.leftNode = null;
+	this.rightNode = null;
+	this.level = 0;
+	this.layer = 0;
+	this.nodeId = 0;
+	this.isVisited = false;
+	this.xindex = 0;
+	this.yindex = 0;
+	this.width = 0;
+	this.height = 0;
+	this.isLast = false;
+}
+
+//layer的使用，通过计算不同的节点在不同的layer,计算水平之间的间距
+//level用来计算垂直方向的间距
+function drawInteractions(ctx,actionType,drawResult,resultString,loopNum,drawInteractionString,enactedValence,visible){
+	//draw the composite interactions
+	if(drawInteractionString != "" && visible){
+		var correspondX = xdraw;
+		var correspondY = yPrimitive;
+		var interactions = drawInteractionString.split("|");  //LEARN:<e50e00>_-12_1_1 | LEARN:<e50<e50e00>>_-14_1_2 | LEARN:<<e50e50>e00>_-14_1_2|
+		for(var i=0;i<interactions.length-1;i++){                       //interactionlabel, valence,weight,level        
+			var interaction = interactions[i];
+			var informations = interaction.split(":");
+			var learnState = informations[0];//LEANR 与 ENFORCE 这块内容不太清楚，需要注意
+			var interactionInfos = informations[1].split("_");// <e50e00>_-12_1_1
+
+			defaultmetre = 50;
+			var interactionLevel = parseInt(interactionInfos[3]);
+			var interactionInfo = interactionInfos[0];//得到了interaction的字符串
+			correspondX = xdraw-interval;
+			correspondY = correspondY-(interval+innerDist);
+			var nodeId = 1;
+			var layer = 1;
+			var nodeStack = [];
+			var mainNode = new Node(interactionInfo);
+			nodes.push(mainNode);
+			nodeStack.push(mainNode);
+			while(nodeStack.length !=0){
+				var upperNode = nodeStack.pop();
+				upperNode.layer = layer;
+				upperNode.nodeId = nodeId;
+				layer++;
+				nodeId++;//最后的一个id为最右边的节点
+				var upperNodeString = upperNode.infoString;
+				var subUpperString = "";
+				if(upperNodeString[0] == "<"){
+					subUpperString = upperNodeString.substring(1,upperNodeString.length-1);
+				}else{
+					subUpperString = upperNodeString;
+				}
+				if(isHaveMark(subUpperString)){
+					var leftMark = [];
+					var rightMark = [];
+					var isFirstLetter = false;
+					var inervalPoint = 0;
+					for(var j=0;j<subUpperString.length;j++){
+						charString = subUpperString[j];
+						if(j==0 && charString != "<"){//第一个字符非"<"的情形
+							isFirstLetter = true;
+						}else{
+							if(isFirstLetter){
+								if(charString == "<"){
+									inervalPoint = j;
+									isFirstLetter = false;
+									break;
+								}
+							}else{//第一个字符是"<"的情形
+								if(charString == "<"){
+									leftMark.push(j);
+								}else if(charString == ">"){
+									leftMark.pop();
+									if(leftMark.length == 0){
+										inervalPoint = j+1;
+										//alert("the interval point position is: "+inervalPoint);
+										break;
+									}
+								}
+							}
+						}
+					}
+					var rightString = subUpperString.substring(inervalPoint,subUpperString.length);
+					var rightNode = new Node(rightString);
+					rightNode.upperNode = upperNode;
+					rightNode.upperNodeDirection = "right";
+					nodeStack.push(rightNode);
+					nodes.push(rightNode);
+					upperNode.rightNode = rightNode;
+
+					var leftString = subUpperString.substring(0,inervalPoint);
+					var leftNode = new Node(leftString);
+					leftNode.upperNode = upperNode;
+					leftNode.upperNodeDirection = "left";
+					nodeStack.push(leftNode);
+					nodes.push(leftNode);
+					upperNode.leftNode = leftNode;
+					//alert("left: "+leftString+"  right:"+rightString);
+				}else{
+					upperNode.leftNode=null;
+					upperNode.rightNode = null;
+				}
+			}
+			for(var smallNode in nodes){
+				if(nodes[smallNode].nodeId == nodes.length){
+					nodes[smallNode].isLast = true;
+				}
+			}
+			drawNodes(ctx,nodes,correspondX,correspondY,interactionLevel);//interactionLevel 用来计算图案大小与上下间距
+			nodes = [];
+		}
+	}
+
+	defaultmetre = 50;
+	//draw primitive intended interaction and enacted interaction
+	var intendedInteraction = "e"+actionType+drawResult;
+	var enactedInteraction  = "e"+actionType+resultString;
+	var img1 = document.getElementById(interactionImages[intendedInteraction]);
+	var img2 = document.getElementById(interactionImages[enactedInteraction]);
+	ctx.drawImage(img1,xdraw,yPrimitive,defaultmetre,defaultmetre);
+	ctx.drawImage(img2,xdraw+innerDist/2,yPrimitive+innerDist/2,defaultmetre,defaultmetre);
+	ctx.strokeText(loopNum, xdraw+interval/2, yPrimitive+3*interval/2);
+	ctx.strokeText(enactedValence, xdraw+interval/2, yPrimitive+4*interval/2);
+	xdraw = xdraw+innerDist+interval;
+}
+
+function drawInteraction(){
+
+}
+
+var scalerate = 0.5;
+function drawNodes(ctx,nodes,correspondX,correspondY,interactionLevel){
+	//这里需要注意如何更好的在canvas上画出不同层次的composite interaction
+	//alert(interactionLevel);
+	var scalecompute = scalerate**interactionLevel;
+	defaultmetre = defaultmetre*scalecompute;
+	/*if(interactionLevel>=2){
+		var scalecompute = scalerate**2;
+		defaultmetre = defaultmetre*scalecompute;
+	}else{
+		defaultmetre = defaultmetre*scalerate;
+	}*/
+	//var scalecompute = scalerate**interactionLevel;
+	//defaultmetre = defaultmetre*scalerate;
+
+	var levels = 0;
+	var mainNode = nodes[0];
+	var farleft = getFarLeft(mainNode,nodes);
+	var drawNodesStack = [];
+	var nodeforvisit = farleft;
+	var xindex = correspondX;
+	var yindex = correspondY;
+	while(!mainNode.isVisited){
+		var nodevisitString = nodeforvisit.infoString;
+		if(nodevisitString[0] == "<"){//得到一个复杂节点
+			var levels = 1;
+			var rectw = marginpadding*2+defaultmetre*2+imageBetweenMargin;//要画的小框的尺寸
+			var recth = marginpadding*2+defaultmetre;
+			ctx.strokeRect(xindex-marginpadding,yindex-marginpadding,rectw,recth);
+			//当前节点的位置尺寸参数信息
+			nodeforvisit.xindex = xindex-marginpadding;
+			nodeforvisit.yindex = yindex-marginpadding;
+			nodeforvisit.width = rectw;
+			nodeforvisit.height = recth;
+			nodeforvisit.level = levels;
+			//显示两个图片
+			var subNodevisitString = nodevisitString.substring(1,nodevisitString.length-1);
+			var subNodevisitString1 = subNodevisitString.substring(0,3);
+			var subNodevisitString2 = subNodevisitString.substring(3,6);
+			var img1 = document.getElementById(interactionImages[subNodevisitString1]);
+			var img2 = document.getElementById(interactionImages[subNodevisitString2]);
+			ctx.drawImage(img1,xindex,yindex,defaultmetre,defaultmetre);
+			xindex = xindex+defaultmetre+imageBetweenMargin;
+			ctx.drawImage(img2,xindex,yindex,defaultmetre,defaultmetre);
+			xindex = xindex+defaultmetre+marginpadding*2;
+			if(nodeforvisit.upperNodeDirection == "left"){//当前为复杂左侧节点，将节点存入栈中
+				//计算一下当前节点与下一个右侧节点之间的间距
+				var rightearestnode = rightNearest(nodeforvisit,nodes);
+				var rightearestnodeString = rightearestnode.infoString;
+				var rightNodeMargin = rightearestnode.layer-nodeforvisit.layer;
+				if(rightearestnodeString[0] != "<"){
+						rightNodeMargin--;//因为在<e11e11>的情形当中，e11到<还有一个间距需要加上
+				}
+				xindex = xindex+marginpadding*rightNodeMargin;//得出了下一个右侧节点的画的 x坐标
+				drawNodesStack.push(nodeforvisit);
+			}else{//右侧 复杂 节点
+				var rightUpperNode = nodeforvisit;
+				while(rightUpperNode.upperNodeDirection == "right"){//开始画框了, 因为是右边的节点，所以需要结合左边的节点形成一个整体,layer表示同样相邻的两个节点之间的间距计算，level用于计算框体高度
+					var correspondLeft = drawNodesStack.pop();//得到左边的节点，比较两个节点之间的级别
+					if(correspondLeft.level > rightUpperNode.level){
+						levels = correspondLeft.level+1;
+					}else{
+						levels = rightUpperNode.level+1;
+					}
+					var rectxindex = correspondLeft.xindex-marginpadding;//窗体的4个参数
+					var rectyindex = 0;
+					var rectwidth = correspondLeft.width+rightUpperNode.width+marginpadding*3;
+					var rectheight = 0;
+					if(correspondLeft.level > rightUpperNode.level){
+						rectyindex = correspondLeft.yindex-marginpadding;
+						rectheight = correspondLeft.height+marginpadding*2;
+					}else{
+						var levelDifference = levels-correspondLeft.level;
+						rectyindex = correspondLeft.yindex-(marginpadding*levelDifference);
+						rectheight = correspondLeft.height+marginpadding*2*levelDifference;
+					}
+					ctx.strokeRect(rectxindex,rectyindex,rectwidth,rectheight);
+					rightUpperNode = rightUpperNode.upperNode;
+					rightUpperNode.xindex = rectxindex;
+					rightUpperNode.yindex = rectyindex;
+					rightUpperNode.width = rectwidth;
+					rightUpperNode.height = rectheight;
+					rightUpperNode.level = levels;
+					if(rightUpperNode.upperNodeDirection == "left"){
+						drawNodesStack.push(rightUpperNode);
+					}
+					xindex=xindex+marginpadding;
+				}
+				if(!nodeforvisit.isLast){
+					var rightearestnode = rightNearest(nodeforvisit,nodes);
+					var rightearestnodeString = rightearestnode.infoString;
+					var rightNodeMargin = rightearestnode.layer-nodeforvisit.layer;
+					if(rightearestnodeString[0] != "<"){
+							rightNodeMargin--;//因为在<e11e11>的情形当中，e11到<还有一个间距需要加上
+					}
+					xindex = xindex+marginpadding*rightNodeMargin;//得出了下一个右侧节点的画的 x坐标
+				}
+			}
+		}else{//得到一个普通节点
+			var img = document.getElementById(interactionImages[nodevisitString]);
+			var levels = 0;
+			nodeforvisit.xindex = xindex;//当前简单节点的位置尺寸大小参数
+			nodeforvisit.yindex = yindex;
+			nodeforvisit.width = defaultmetre;
+			nodeforvisit.height = defaultmetre;
+			ctx.drawImage(img,xindex,yindex,defaultmetre,defaultmetre);
+			xindex=xindex+defaultmetre+marginpadding;
+			//由于画框与画图是分开的，所以两个坐标也是不同的，画框是通过前面的节点坐标和框的大小来的，画图是依据位移偏量来进行的
+			if(nodeforvisit.upperNodeDirection == "left"){//当前为左侧节点，将该节点存入栈中
+				//alert("这个结点是一个左方向的简单节点");
+				var rightearestnode = rightNearest(nodeforvisit,nodes);
+				var rightearestnodeString = rightearestnode.infoString;
+				var rightNodeMargin = rightearestnode.layer-nodeforvisit.layer;
+				if(rightearestnodeString[0] != "<"){
+						rightNodeMargin--;
+				}
+				xindex = xindex+marginpadding*rightNodeMargin;
+				drawNodesStack.push(nodeforvisit);
+			}else{//当前节点为右侧简单节点
+				var rightUpperNode = nodeforvisit;
+				while(rightUpperNode.upperNodeDirection == "right"){//这个只是为了画框吗？
+					var correspondLeft = drawNodesStack.pop();
+					if(correspondLeft.level > rightUpperNode.level){
+						levels = correspondLeft.level+1;
+					}else{
+						levels = rightUpperNode.level+1;
+					}
+					var rectxindex = correspondLeft.xindex-marginpadding;
+					var rectyindex = 0;
+					var rectwidth = correspondLeft.width+rightUpperNode.width+marginpadding*3;
+					var rectheight = 0;
+					if(correspondLeft.level > rightUpperNode){
+						rectyindex = correspondLeft.yindex-marginpadding;
+						rectheight = correspondLeft.height+marginpadding*2;
+					}else{
+						var levelDifference = levels-correspondLeft.level;
+						rectyindex = correspondLeft.yindex-(marginpadding*levelDifference);
+						rectheight = correspondLeft.height+marginpadding*2*levelDifference;
+
+					}
+					ctx.strokeRect(rectxindex,rectyindex,rectwidth,rectheight);
+					rightUpperNode = rightUpperNode.upperNode;
+					rightUpperNode.xindex = rectxindex;
+					rightUpperNode.yindex = rectyindex;
+					rightUpperNode.width = rectwidth;
+					rightUpperNode.height = rectheight;
+					rightUpperNode.level = levels;
+					if(rightUpperNode.upperNodeDirection == "left"){
+						drawNodesStack.push(rightUpperNode);
+					}
+					xindex=xindex+marginpadding//这里增加了一个单位，但是目前不知道这个是左什么用的;
+				}
+				if(!nodeforvisit.isLast){
+					var rightearestnode = rightNearest(nodeforvisit,nodes);
+					var rightearestnodeString = rightearestnode.infoString;
+					var rightNodeMargin = rightearestnode.layer-nodeforvisit.layer;
+					if(rightearestnodeString[0] != "<"){
+							rightNodeMargin--;//因为在<e11e11>的情形当中，e11到<还有一个间距需要加上
+					}
+					xindex = xindex+marginpadding*rightNodeMargin;//得出了下一个右侧节点的画的 x坐标
+				}
+			}
+		}
+		updateNodes(nodeforvisit,nodes);
+		nodeforvisit = rightNearest(nodeforvisit,nodes);
+	}
+	/*ctx.fillStyle = "green";
+	ctx.beginPath();
+	ctx.arc(xindex,yindex,6,0,2*Math.PI);
+	ctx.fill();
+	var nodesstring = "";
+	for(var testnode in nodes){
+		nodesstring = nodesstring+nodes[testnode].nodeId+":"+nodes[testnode].infoString+" layer:"+nodes[testnode].layer+" level:"+nodes[testnode].level+" "+nodes[testnode].isVisited+"\n";
+	}
+	alert(nodesstring);*/
+}
+
+function isHaveMark(infoString){
+	var isHaveMark = false;
+	for(var i=0;i<infoString.length;i++){
+		var charString = infoString[i];
+		if(charString == "<" || charString==">"){
+			isHaveMark = true;
+		}
+	}
+	return isHaveMark;
+}
+
+function  getFarLeft(mainNode,nodes){
+	//alert("the far left node");
+	var farleft = mainNode;
+	while(farleft.leftNode != null){
+		farleft = farleft.leftNode;
+	}
+	return farleft;
+}
+
+function rightNearest(currentNode,nodes){
+	var pointNode = currentNode;
+	var node = null;
+	while(pointNode.upperNodeDirection == "right"){
+		pointNode = pointNode.upperNode;
+	}
+	if(pointNode.upperNodeDirection != "top"){
+		pointNode = pointNode.upperNode.rightNode;
+		node = getFarLeft(pointNode,nodes);
+		return node;
+	}else{
+		node = null;
+		return node;
+	}
+}
+
+function  updateNodes(nodeforvisit,nodes){
+	nodeforvisit.isVisited = true;
+	var interNode = nodeforvisit;
+	if(interNode.upperNodeDirection == "right"){
+		while(interNode.upperNodeDirection == "right"){
+			interNode = interNode.upperNode;
+			interNode.isVisited = true;
+		}
+	}
+}
+
+function reset(){
+	clearCurrent(xcenter,ycenter);
+	initialMaze();
+	window.location.reload();
+	alert("Reset process is done!");
+	//window.open('page.html');
+}
+
+
+//画曲线图，这里主要画 total valence
+var chart = null;
+$(document).ready(function() {
+  chart = Highcharts.chart('container', {
+    chart: {
+      type: 'spline',
+      events: {
+        load: drawCharts
+      }
+    },
+    title: {
+      text: 'Agent performance in interacting with the environment (steps - valences)'
+    },
+    xAxis: {
+    	title: {
+            text: 'Steps'
+        }
+    },
+    yAxis: {
+      minPadding: 0.2,
+      maxPadding: 0.2,
+      title: {
+        text: 'Total valences',
+        margin: 80
+      }
+    },
+    
+    legend:{
+    	layout: 'vertical',
+	      align: 'right',
+	      verticalAlign: 'middle',
+	      borderWidth: 0
+    },
+    series: [{
+      name: 'Constructivist cognitive architecture',
+      data: []
+    }]
+  });
+});
+
+//画曲线图，这里主要画 bumped times
+var chartBump = null;
+$(document).ready(function() {
+	chartBump = Highcharts.chart('bumpTimes', {
+    chart: {
+      type: 'spline',
+      events: {
+        load: drawCharts
+      }
+    },
+    title: {
+      text: 'Agent performance in interacting with the environment (steps - bumped times)'
+    },
+    xAxis: {
+    	title: {
+            text: 'Steps'
+        }
+    },
+    yAxis: {
+      minPadding: 0.2,
+      maxPadding: 0.2,
+      title: {
+        text: 'Bump times',
+        margin: 80
+      }
+    },
+    legend:{
+    	layout: 'vertical',
+	      align: 'right',
+	      verticalAlign: 'middle',
+	      borderWidth: 0
+    },
+    series: [{
+      name: 'Constructivist cognitive architecture',
+      data: []
+    }]
+  });
+});
+
+function drawCharts(){
+}
+
+</script>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Developmental learning </title>
+<style type="text/css">
+.test {
+	text-align: center;
+}
+.canvas {
+	text-align: left;
+}
+.canvas p {
+	font-family: Arial, Helvetica, sans-serif;
+}
+.canvas table tr td {
+	font-family: Arial, Helvetica, sans-serif;
+	text-align: center;
+}
+.canvas table tr td table {
+	text-align: center;
+}
+.canvas table tr td table tr td {
+	text-align: center;
+}
+</style>
+</head>
+
+<body class="canvas" onload="initialMaze();">
+
+<table width="1366" height="588" border="0">
+<tr>
+    <td width="582" height="537" align="center" valign="middle"><canvas id="myCanvas" width="500" height="500" ></canvas></td>
+    <td width="464"><table width="484" height="232" border="1" cellspacing="0">
+      <td height="39" colspan="3">Parameters</td>
+      <tr>
+        <td height="39">move forward:</td>
+        <td><input type="number" id="v_move_forward"  name="v_move_forward" value="5" style="width:100px;"></td>
+		<td><img src="images/move_forward_original.png" id="move_forward" width="33" height="33" />
+        	<img src="images/move_forward_up.png" id="move_forward_up" width="33" height="33" style="visibility:hidden;"/>
+        </td>
+		
+      </tr>
+      <tr>
+        <td height="39">bump: </td>
+        <td><input type="number" id="v_bump"  name="v_bump" value="-10" style="width:100px;"></td>
+		<td><img src="images/bump_original.png" id="bump" width="33" height="33" />
+			<img src="images/bump_up.png" id="bump_up" width="33" height="33"  style="visibility:hidden;"/>
+        </td>
+		
+      </tr>
+      <tr>
+        <td height="39">turn:</td>
+        <td><input type="number" id="v_turn"  name="v_turn" value="-3" style="width:100px;"></td>
+        <td><img src="images/turn_left.png"  id="turn_left"  width="33" height="33" />&nbsp;&nbsp;
+        <img src="images/turn_right.png"   id="turn_right" width="33" height="33" /></td>
+      </tr>
+      <tr>
+        <td height="39">feel empty:</td>
+        <td><input type="number" id="v_feel_empty"  name="v_feel_empty" value="-1" style="width:100px;"></td>
+        <td><img src="images/feel_front_empty.png" id="feel_front_empty" width="33" height="33" />&nbsp;&nbsp;
+        <img src="images/feel_left_empty.png"  id="feel_left_empty" width="33" height="33" />&nbsp;&nbsp;
+        <img src="images/feel_right_empty.png"   id="feel_right_empty"  width="33" height="33" /></td>
+      </tr>
+      <tr>
+        <td width="178" height="39">feel the wall:</td>
+        <td><input type="number" id="v_feel_wall" name="v_feel_wall" value="-2" style="width:100px;"/></td>
+        <td><img src="images/feel_front_wall.png" id="feel_front_wall" width="33" height="33" />&nbsp;&nbsp;
+        <img src="images/feel_left_wall.png" id="feel_left_wall" width="33" height="33" />&nbsp;&nbsp;
+        <img src="images/feel_right_wall.png" id="feel_right_wall" width="33" height="33" /></td>
+      </tr>
+      <tr>
+        <td width="178" height="39">time interval:</td>
+        <td><input type="number" id="time_interval" name="time_interval" value="500" style="width:70px;"/>ms</td>
+      </tr>
+      <tr>
+        <td width="178" height="39">actionType:</td>
+        <td><input type="text" id="actionType" name="actionType" value=""  style="width:100px;"/></td>
+      </tr>
+      <tr>
+        <td width="178" height="39">Total Valence:</td>
+        <td><input type="number" id="totalValence" name="totalValence" value="0" style="width:100px;"/></td>
+      </tr>
+      <tr>
+        <td width="178" height="39">loop num:</td>
+        <td><input type="number" id="loopNum" name="loopNum" value="0" style="width:100px;"/></td>
+      </tr>
+      <tr>
+        <td height="39" colspan="2">
+        	<button type="button" onclick="start()">Start</button>&nbsp;&nbsp;
+        	<button type="button" onclick="stop()">Stop</button>&nbsp;&nbsp;
+        	<button type="button" onclick="reset()">Reset</button>
+        </td>
+      </tr>
+    </table></td>
+    <!-- <td width="200" height="537" align="center" valign="middle"><canvas id="canvas1" width="200" height="500" ></canvas></td> -->
+  </tr>
+</table>
+<p>&nbsp;</p>
+<table width="1340" height="300" border="1" cellpadding="0" cellspacing="0" >
+  <tr>
+    <td width="1290"><canvas id="canvas1" width="1290" height="1000"></canvas></td>
+    <td><button type="button" onclick="start()">Start</button></p>
+        <button type="button" onclick="stop()">Stop</button></p>
+        <button type="button" onclick="reset()">Reset</button></td>
+  </tr>
+</table>
+
+<p>&nbsp;</p>
+
+<!--
+<table width="1290" height="500" border="1" cellpadding="0" cellspacing="0" >
+  <tr>
+    <td width="1290"><canvas id="canvas2" width="1290" height="500"></canvas></td>
+  </tr>
+</table>
+-->
+
+ <p>&nbsp;</p>
+ <table width="1290" height="500" border="1" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><div id="container" style="width: 1290; height: 400px; margin: 0 auto"></div></td>
+  </tr>
+</table>
+<p>&nbsp;</p>
+ <table width="1290" height="500" border="1" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><div id="bumpTimes" style="width: 1290; height: 400px; margin: 0 auto"></div></td>
+  </tr>
+</table>
+
+
+
+
+<p>
+<!-- 
+<table width="20%" align="center" >
+<img src="images/logo_liris.png" width="10%" /> &nbsp;&nbsp;&nbsp;&nbsp;<img src="images/SMA.jpg" width="10%"/>
+</table>
+ -->
+
+<!-- 
+<div id="myDiv"><h2>Using the methods submit the interactions</h2></div>
+<button type="button" onclick="loadXMLDoc()">Edit the content</button>
+<p class="test">adfdasfdffad</p>
+https://www.youtube.com/watch?v=LVZ0cPpmSu8
+
+point1. color could be used to identify this learning process.
+ -->
+</body>
+</html>
