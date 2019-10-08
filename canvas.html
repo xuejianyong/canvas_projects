@@ -5,19 +5,40 @@
 <title>canvas with css3</title>
 </head>
 <style>
-div{
+
+div.outdivclass{
     background-color: #fff;
     width: 600px;
-    height: 500px;
+    height: 300px;
     border: 1px solid rgb(22, 241, 106);
-    overflow: scroll;
+    overflow: auto;
+}
 
+div.leftdiv{
+    background-color: #fff;
+    width: 160px;
+    height: 200px;
+    float: left;
+    border: 1px solid blue;
+}
+
+div.scrolldivclass{
+    background-color: #fff;
+    width: 300px;
+    height: 200px;
+    border: 1px solid rgb(22, 241, 106);
+    overflow: auto;
+}
+
+
+.textclass{
+    font-size: 14px;
 
 }
 
-.divclass{
 
-}
+
+
 
 </style>
 <script>
@@ -27,22 +48,16 @@ function initialize(){
 
     ctx.fillStyle = "#0F9";
 	ctx.fillRect(0,0,canvas.width,canvas.height);
-
     //alert(canvas.width);
     canvas.width = canvas.width+50;
     //alert(canvas.width);
     ctx.fillStyle = "#0F9";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-    
     var div = document.getElementById('scrolldiv');
     div.scrollLeft  = div.scrollWidth;
-        
-    
     setTimeout('initialize()',2000);
-
     //alert("initialization function");
 }
-
 
 function addwidth(){
     var canvas = document.getElementById("myCanvas");
@@ -50,22 +65,24 @@ function addwidth(){
     canvas.width = canvas.width+50;
     ctx.fillStyle = "#0F9";
     ctx.fillRect(0,0,canvas.width,canvas.height);
-
     var div = document.getElementById('scrolldiv');
     div.scrollLeft  = div.scrollWidth;
-    //div.scrollTop = div.scrollHeight;
-	//div.scrollLeft  = div.scrollWidth;
 }
+
 </script>
 <body>
 <p></p>
 <p></p>
 <p></p>
 <p></p>
-<div id="scrolldiv" class="divclass">
-        <canvas id="myCanvas" width="100" height="300" ></canvas>
+<div class="outdivclass">
+    <div class="leftdiv">
+        <p class="textclass">composite interaction</p>
+    </div>
+    <div id="scrolldiv" class="scrolldivclass">
+            <canvas id="myCanvas" width="100" height="100" ></canvas>
+    </div>
 </div>
-
 <p>&nbsp;</p>
 <input type="button" value="Click the button" onclick="addwidth();">
 </body>
