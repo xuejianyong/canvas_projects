@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>无标题文档</title>
+
+<script>
+
+function addfunction(){
+	//alert("the function");
+    var now = new Date();
+    var div = document.getElementById('scrolldIV');
+    div.innerHTML = div.innerHTML + 'time_' + now.getTime() + '<br/>';
+    div.scrollTop = div.scrollHeight;
+	//div.scrollLeft  = div.scrollWidth;
+}
+</script>
+
+
+</head>
+
+<body>
+
+
+<span >请点击“插入一行”按钮，插入最新信息，当出现滚动条时，滚动条将自动保持在底部。</span><br />
+
+<div id="scrolldIV" style="overflow:auto; height: 100px; width: 400px; border: 1px solid #999;">
+</div>
+<p>&nbsp;</p>
+<input type="button" value="insert a line" onclick="addfunction();">
+
+
+</body>
+</html>
