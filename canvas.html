@@ -8,36 +8,44 @@
 
 div.outdivclass{
     background-color: #fff;
-    width: 600px;
-    height: 300px;
+    width: 1200px;
+    height: 1000px;
     border: 1px solid rgb(22, 241, 106);
     overflow: auto;
 }
 
 div.leftdiv{
     background-color: #fff;
-    width: 160px;
-    height: 200px;
+    width: 200px;
+    height: 300px;
     float: left;
     border: 1px solid blue;
+    font-size: 10px;
 }
 
 div.scrolldivclass{
     background-color: #fff;
-    width: 300px;
-    height: 200px;
+    width: 800px;
+    height: 300px;
     border: 1px solid rgb(22, 241, 106);
     overflow: auto;
 }
 
-
-.textclass{
-    font-size: 14px;
-
+div.canvastestclass{
+    background-color: aqua;
+    height: 600px;
+    margin-top: 50px;
+    overflow: auto;
+    
 }
 
 
+.textclass{
+    padding-left: 20px;
+    padding-top: 30px;
+    font-size: 14px;
 
+}
 
 
 </style>
@@ -59,18 +67,37 @@ function initialize(){
     //alert("initialization function");
 }
 
+var xcenter = 0;
 function addwidth(){
     var canvas = document.getElementById("myCanvas");
 	var ctx = canvas.getContext("2d");
-    canvas.width = canvas.width+50;
+    //canvas.width = canvas.width+50;
+
     ctx.fillStyle = "#0F9";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    //ctx.fillRect(0,0,canvas.width,canvas.height);  
+    xcenter = xcenter+200;
+    var img = document.getElementById("move_forward");
+    ctx.drawImage(img,xcenter,0,200,200);
+
     var div = document.getElementById('scrolldiv');
-    div.scrollLeft  = div.scrollWidth;
+    div.scrollLeft  = xcenter;
+
+    var div = document.getElementById('shownum');
+    div.innerHTML = xcenter;
+    
 }
 
+function initialenv(){
+    var canvas = document.getElementById("canvastest");
+	var ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#0f9";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+}
+
+
 </script>
-<body>
+<body onload="initialenv();">
 <p></p>
 <p></p>
 <p></p>
@@ -80,10 +107,16 @@ function addwidth(){
         <p class="textclass">composite interaction</p>
     </div>
     <div id="scrolldiv" class="scrolldivclass">
-            <canvas id="myCanvas" width="100" height="100" ></canvas>
+            <canvas id="myCanvas" width="5000" height="200" ></canvas>
     </div>
+    <input type="button" value="Click the button" onclick="addwidth();"><div id="shownum"></div>
+    <div class="canvastestclass">
+        <canvas id="canvastest" width="1000" height="1000"></canvas>
+    </div>
+
 </div>
 <p>&nbsp;</p>
-<input type="button" value="Click the button" onclick="addwidth();">
+
+<img src="images/move_forward.png" id="move_forward" width="33" height="33"  />
 </body>
 </html>
